@@ -103,6 +103,14 @@ class Subject(BaseModel):
 
         if any(self.experiments.values()):
             return
+        first_run_path = subject_run_path(self.id, 1, self.raw_dir)
+        if not first_run_path.exists():
+            raise FileNotFoundError(
+                f"Dataset not found at '{self.raw_dir}'.\n"
+                "Download the PhysioNet EEG Motor Movement/Imagery dataset and place it there:\n"
+                "  https://physionet.org/content/eegmmidb/1.0.0/\n"
+                f"Expected layout: {self.raw_dir}/S001/S001R01.edf ..."
+            )
         for run_id in range(1, 15):
             experiment_type = get_experiment_type(run_id)
             self.experiments[experiment_type].append(
