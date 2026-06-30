@@ -16,15 +16,15 @@ from tpv.scoring import SplitConfig, evaluate_pipeline
 
 EvaluationSetup = ExperimentType | str
 
-EXECUTION_VS_IMAGERY = "execution_vs_imagery"
-MOVEMENT_TARGET_FAMILY = "movement_target_family"
+EXECUTION_VS_IMAGERY_LEFT_RIGHT = "execution_vs_imagery_left_right"
+EXECUTION_VS_IMAGERY_HANDS_FEET = "execution_vs_imagery_hands_feet"
 MOTION_EXPERIMENTS: tuple[EvaluationSetup, ...] = (
     ExperimentType.EXECUTION_LEFT_RIGHT,
     ExperimentType.IMAGERY_LEFT_RIGHT,
     ExperimentType.EXECUTION_HANDS_FEET,
     ExperimentType.IMAGERY_HANDS_FEET,
-    EXECUTION_VS_IMAGERY,
-    MOVEMENT_TARGET_FAMILY,
+    EXECUTION_VS_IMAGERY_LEFT_RIGHT,
+    EXECUTION_VS_IMAGERY_HANDS_FEET,
 )
 
 
@@ -154,52 +154,20 @@ def arrays_for_setup(
         filtered_runs = filter_runs(runs, filter_config)
         return motion_epochs_to_arrays(make_epochs_by_run(filtered_runs, epoch_config))
 
-    if setup == EXECUTION_VS_IMAGERY:
-        groups = (
-            (
-                1,
-                (
-                    ExperimentType.EXECUTION_LEFT_RIGHT,
-                    ExperimentType.EXECUTION_HANDS_FEET,
-                ),
-            ),
-            (
-                2,
-                (
-                    ExperimentType.IMAGERY_LEFT_RIGHT,
-                    ExperimentType.IMAGERY_HANDS_FEET,
-                ),
-            ),
-        )
-    elif setup == MOVEMENT_TARGET_FAMILY:
-        groups = (
-            (
-                1,
-                (
-                    ExperimentType.EXECUTION_LEFT_RIGHT,
-                    ExperimentType.IMAGERY_LEFT_RIGHT,
-                ),
-            ),
-            (
-                2,
-                (
-                    ExperimentType.EXECUTION_HANDS_FEET,
-                    ExperimentType.IMAGERY_HANDS_FEET,
-                ),
-            ),
-        )
+    if setup == EXECUTION_VS_IMAGERY_LEFT_RIGHT:
+        pair = (ExperimentType.EXECUTION_LEFT_RIGHT, ExperimentType.IMAGERY_LEFT_RIGHT)
+    elif setup == EXECUTION_VS_IMAGERY_HANDS_FEET:
+        pair = (ExperimentType.EXECUTION_HANDS_FEET, ExperimentType.IMAGERY_HANDS_FEET)
     else:
         raise ValueError(f"unknown evaluation setup: {setup}")
 
     chunks: list[np.ndarray] = []
     labels: list[np.ndarray] = []
-    for label, experiments in groups:
-        for experiment in experiments:
-            filtered_runs = filter_runs(subject.runs(experiment), filter_config)
-            epochs_by_run = make_epochs_by_run(filtered_runs, epoch_config)
-            X, _ = motion_epochs_to_arrays(epochs_by_run)
-            chunks.append(X)
-            labels.append(np.full(X.shape[0], label, dtype=int))
+    for label, experiment in enumerate(pair, start=1):
+        filtered_runs = filter_runs(subject.runs(experiment), filter_config)
+        X, _ = motion_epochs_to_arrays(make_epochs_by_run(filtered_runs, epoch_config))
+        chunks.append(X)
+        labels.append(np.full(X.shape[0], label, dtype=int))
     return np.concatenate(chunks), np.concatenate(labels)
 
 

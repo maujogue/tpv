@@ -87,12 +87,22 @@ class CSPTransformer(BaseEstimator, TransformerMixin):
         if self.n_components > epochs.shape[1]:
             raise ValueError("n_components cannot exceed the number of channels")
 
+        # Compute the mean, trace-normalized covariance matrix for each class.
         covariance_a = self._mean_normalized_covariance(epochs[labels == classes[0]])
         covariance_b = self._mean_normalized_covariance(epochs[labels == classes[1]])
+
+        # Form the composite covariance, which captures total variance across both classes.
         composite = covariance_a + covariance_b
+
+        # Solve the generalized eigenvalue problem:
+        #   np.linalg.pinv(composite) @ covariance_a * v = lambda * v,
+        # which finds filters (eigenvectors) maximizing variance for class 0 while minimizing it for class 1.
         eigenvalues, eigenvectors = np.linalg.eig(
             np.linalg.pinv(composite) @ covariance_a
         )
+
+        # Sort eigenvectors by how close their corresponding eigenvalue is to 0 or 1 (farthest from 0.5),
+        # which yields filters that most discriminate between the two classes.
         order = np.argsort(np.abs(eigenvalues.real - 0.5))[::-1]
 
         self.filters_ = eigenvectors.real[:, order[: self.n_components]].T
