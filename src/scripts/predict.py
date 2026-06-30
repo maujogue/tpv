@@ -49,6 +49,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if not args.model.exists():
+        print(f"error: model file not found: {args.model}")
+        print("hint: train a model first with `tpv-train`")
+        return 1
     with args.model.open("rb") as model_file:
         obj = pickle.load(model_file)
 
@@ -83,7 +87,8 @@ def main(argv: list[str] | None = None) -> int:
     for prediction in predictions:
         print(
             f"chunk={prediction.index} label={prediction.label} "
-            f"latency={prediction.latency_seconds:.6f}s"
+            f"latency={prediction.latency_seconds:.6f}s",
+            flush=True,
         )
     return 0
 

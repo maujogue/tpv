@@ -59,7 +59,7 @@ def predict_stream(
     pipeline: EpochPredictor,
     stream: Iterator[tuple[int, NDArray[np.float64]]],
     max_latency_seconds: float = 2.0,
-) -> list[StreamPrediction]:
+) -> Iterator[StreamPrediction]:
     """Predict labels for streamed chunks within a latency budget.
 
     Args:
@@ -67,14 +67,13 @@ def predict_stream(
         stream: Iterator producing ``(index, chunk)`` pairs.
         max_latency_seconds: Maximum allowed processing time per chunk.
 
-    Returns:
+    Yields:
         Prediction results in stream order.
 
     Raises:
         TimeoutError: If one chunk takes longer than ``max_latency_seconds``.
     """
 
-    predictions: list[StreamPrediction] = []
     for index, chunk in stream:
         started_at = perf_counter()
         label = int(pipeline.predict(chunk[np.newaxis, :, :])[0])
@@ -84,7 +83,4 @@ def predict_stream(
                 f"prediction for chunk {index} took {latency:.3f}s, "
                 f"above the {max_latency_seconds:.3f}s limit"
             )
-        predictions.append(
-            StreamPrediction(index=index, label=label, latency_seconds=latency)
-        )
-    return predictions
+        yield StreamPrediction(index=index, label=label, latency_seconds=latency)
