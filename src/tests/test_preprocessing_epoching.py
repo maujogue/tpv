@@ -32,11 +32,11 @@ def test_filter_raw_returns_filtered_copy() -> None:
     """Filtering should not mutate the caller's raw object."""
 
     raw = make_raw_with_annotations()
-    filtered = filter_raw(raw, FilterConfig(l_freq=7.0, h_freq=30.0))
+    filtered = filter_raw(raw, FilterConfig(l_freq=8.0, h_freq=40.0))
 
     assert filtered is not raw
-    assert filtered.info["highpass"] == pytest.approx(7.0)
-    assert filtered.info["lowpass"] == pytest.approx(30.0)
+    assert filtered.info["highpass"] == pytest.approx(8.0)
+    assert filtered.info["lowpass"] == pytest.approx(40.0)
     assert raw.info["highpass"] == pytest.approx(0.0)
 
 
@@ -44,7 +44,7 @@ def test_filter_config_rejects_inverted_band() -> None:
     """The band-pass lower cutoff must stay below the upper cutoff."""
 
     with pytest.raises(ValueError, match="l_freq"):
-        FilterConfig(l_freq=30.0, h_freq=7.0)
+        FilterConfig(l_freq=40.0, h_freq=8.0)
 
 
 def test_extract_events_reads_annotations() -> None:

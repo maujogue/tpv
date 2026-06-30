@@ -44,10 +44,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="Experiment family to preprocess",
     )
     parser.add_argument(
-        "--l-freq", type=float, default=7.0, help="Lower filter cutoff in Hz"
+        "--l-freq", type=float, default=8.0, help="Lower filter cutoff in Hz"
     )
     parser.add_argument(
-        "--h-freq", type=float, default=30.0, help="Upper filter cutoff in Hz"
+        "--h-freq", type=float, default=40.0, help="Upper filter cutoff in Hz"
     )
     parser.add_argument(
         "--tmin", type=float, default=-1.0, help="Epoch start in seconds"
@@ -155,7 +155,7 @@ def main(argv: list[str] | None = None) -> int:
             f"{args.l_freq}-{args.h_freq} Hz - {experiment_label}"
         ),
     )
-    filtered_runs[plot_index].compute_psd(fmin=0, fmax=40, picks="eeg").plot(
+    filtered_runs[plot_index].compute_psd(fmin=0, fmax=50, picks="eeg").plot(
         average=True,
         spatial_colors=True,
     )

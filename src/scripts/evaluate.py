@@ -100,10 +100,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="Keep all 64 channels instead of the per-experiment sensorimotor strip",
     )
     parser.add_argument(
-        "--l-freq", type=float, default=7.0, help="Lower band-pass cutoff"
+        "--l-freq", type=float, default=8.0, help="Lower band-pass cutoff"
     )
     parser.add_argument(
-        "--h-freq", type=float, default=30.0, help="Upper band-pass cutoff"
+        "--h-freq", type=float, default=40.0, help="Upper band-pass cutoff"
     )
     parser.add_argument(
         "--tmin", type=float, default=0.5, help="Epoch start in seconds"

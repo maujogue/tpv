@@ -1,6 +1,6 @@
 """Preprocess raw EEG signals before epoch extraction.
 
-Motor imagery studies usually keep the mu and beta rhythms. The default 7-30 Hz
+Motor imagery studies usually keep the mu and beta rhythms. The default 8-40 Hz
 band-pass filter keeps those rhythms while removing slow drift and high-frequency noise.
 """
 
@@ -17,10 +17,10 @@ class FilterConfig(BaseModel):
     """
 
     l_freq: float | None = Field(
-        default=7.0, ge=0.0, description="Lower cutoff frequency"
+        default=8.0, ge=0.0, description="Lower cutoff frequency"
     )
     h_freq: float | None = Field(
-        default=30.0, gt=0.0, description="Upper cutoff frequency"
+        default=40.0, gt=0.0, description="Upper cutoff frequency"
     )
 
     @model_validator(mode="after")
@@ -50,7 +50,7 @@ def filter_raw(
 
     Args:
         raw: MNE raw EEG recording.
-        config: Optional filter configuration. Defaults to 7-30 Hz.
+        config: Optional filter configuration. Defaults to 8-40 Hz.
 
     Returns:
         Filtered copy of ``raw``. The input object is not modified.
@@ -72,7 +72,7 @@ def filter_runs(
 
     Args:
         runs: Raw EEG recordings.
-        config: Optional filter configuration. Defaults to 7-30 Hz.
+        config: Optional filter configuration. Defaults to 8-40 Hz.
 
     Returns:
         Filtered copies in the same order as ``runs``.

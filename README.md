@@ -12,13 +12,15 @@ The project loads PhysioNet EEG Motor Movement/Imagery EDF files, filters the EE
   - `imagery_left_right`
   - `execution_hands_feet`
   - `imagery_hands_feet`
-- Band-pass preprocessing, default `7-30 Hz`.
+- Band-pass preprocessing, default `8-40 Hz`.
 - Event extraction from MNE annotations.
 - Epoch creation around events.
 - Rest-event removal for binary motion classification.
 - Custom CSP dimensionality reduction as an sklearn transformer.
 - sklearn pipeline: `CSPTransformer` then `LinearDiscriminantAnalysis`.
 - Train, predict, preprocessing, and aggregate evaluation commands.
+- Per-experiment channel selection: sensorimotor strip for single-family tasks, full montage for cross-task setups.
+- Serialisable `ModelBundle` that pairs a fitted pipeline with its training metadata.
 - Full 109-subject scoring over six evaluation setups.
 
 ## Requirements
@@ -71,8 +73,8 @@ Useful options:
 ```bash
 uv run tpv 1 \
   --experiment imagery_hands_feet \
-  --l-freq 7 \
-  --h-freq 30 \
+  --l-freq 8 \
+  --h-freq 40 \
   --tmin -1 \
   --tmax 4
 ```
@@ -106,8 +108,8 @@ uv run tpv-train 1 \
   --experiment imagery_left_right \
   --output data/models/subject001_imagery_lr.pkl \
   --n-components 4 \
-  --l-freq 7 \
-  --h-freq 30 \
+  --l-freq 8 \
+  --h-freq 40 \
   --tmin 0 \
   --tmax 2 \
   --test-size 0.2 \
@@ -154,8 +156,8 @@ Default behavior:
   - `imagery_left_right`
   - `execution_hands_feet`
   - `imagery_hands_feet`
-  - `execution_vs_imagery`
-  - `movement_target_family`
+  - `execution_vs_imagery_left_right`
+  - `execution_vs_imagery_hands_feet`
 
 The correction asks for training over each subject, computing the mean by experiment type, then averaging the six means. This command does that.
 
@@ -180,8 +182,8 @@ execution_left_right: accuracy = 0.6264
 imagery_left_right: accuracy = 0.6376
 execution_hands_feet: accuracy = 0.7850
 imagery_hands_feet: accuracy = 0.6970
-execution_vs_imagery: accuracy = 0.7398
-movement_target_family: accuracy = 0.6983
+execution_vs_imagery_left_right: accuracy = 0.7398
+execution_vs_imagery_hands_feet: accuracy = 0.6983
 Mean accuracy: 0.6974
 ```
 
@@ -228,17 +230,14 @@ src/tpv/events.py          MNE annotation to event-array conversion
 src/tpv/preprocessing.py   band-pass filtering
 src/tpv/epoching.py        event-centered epoch creation
 src/tpv/dataset.py         MNE epochs to X/y arrays, rest removal
+src/tpv/channels.py        per-experiment channel selection
 src/tpv/pipeline.py        CSP transformer and sklearn pipeline
+src/tpv/model.py           ModelBundle: fitted pipeline + training metadata
 src/tpv/scoring.py         cross-validation, validation, test scoring
 src/tpv/stream.py          streamed epoch playback and prediction deadlines
 src/tpv/cli.py             preprocessing / plotting command
 src/scripts/train.py       train command
-src/scripts/predict.py     predict command
+src/scripts/predict.py     predict command (streams held-out test set)
 src/scripts/evaluate.py    aggregate scoring command
 src/tests/                 focused unit tests
 ```
-
-More detailed documentation:
-
-- [Project architecture](docs/architecture.md)
-- [Evaluation study guide](docs/evaluation-guide.md)
