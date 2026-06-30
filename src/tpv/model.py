@@ -19,6 +19,8 @@ class ModelMetadata:
     tmax: float
     subject: int
     n_components: int
+    test_size: float = 0.2
+    random_state: int = 42
 
 
 @dataclasses.dataclass

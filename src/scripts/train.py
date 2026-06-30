@@ -136,6 +136,8 @@ def main(argv: list[str] | None = None) -> int:
         tmax=args.tmax,
         subject=args.subject,
         n_components=args.n_components,
+        test_size=args.test_size,
+        random_state=args.random_state,
     )
     bundle = ModelBundle(pipeline=fitted_pipeline, metadata=meta)
 

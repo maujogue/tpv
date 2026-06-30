@@ -4,7 +4,10 @@ import argparse
 import pickle
 from pathlib import Path
 
-from tpv.channels import channels_for_experiment, pick_channels
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split
+
+from tpv.channels import pick_channels
 from tpv.dataset import motion_epochs_to_arrays
 from tpv.epoching import EpochConfig, make_epochs_by_run
 from tpv.loader import ExperimentType, Subject
@@ -56,18 +59,14 @@ def main(argv: list[str] | None = None) -> int:
     with args.model.open("rb") as model_file:
         obj = pickle.load(model_file)
 
-    if isinstance(obj, ModelBundle):
-        meta = obj.metadata
-        pipeline = obj.pipeline
-        channels = meta.channels
-        filter_config = FilterConfig(l_freq=meta.l_freq, h_freq=meta.h_freq)
-        epoch_config = EpochConfig(tmin=meta.tmin, tmax=meta.tmax)
-    else:
-        # Legacy: bare pipeline without metadata — use defaults.
-        pipeline = obj
-        channels = channels_for_experiment(args.experiment)
-        filter_config = FilterConfig()
-        epoch_config = EpochConfig()
+    if not isinstance(obj, ModelBundle):
+        print("error: model format not supported, please retrain with `tpv-train`")
+        return 1
+    meta = obj.metadata
+    pipeline = obj.pipeline
+    channels = meta.channels
+    filter_config = FilterConfig(l_freq=meta.l_freq, h_freq=meta.h_freq)
+    epoch_config = EpochConfig(tmin=meta.tmin, tmax=meta.tmax)
 
     subject = (
         Subject(id=args.subject, raw_dir=args.raw_dir)
@@ -77,19 +76,40 @@ def main(argv: list[str] | None = None) -> int:
     runs = pick_channels(subject.runs(args.experiment), channels)
     filtered_runs = filter_runs(runs, filter_config)
     epochs_by_run = make_epochs_by_run(filtered_runs, epoch_config)
-    chunks, _ = motion_epochs_to_arrays(epochs_by_run)
+    chunks, true_labels = motion_epochs_to_arrays(epochs_by_run)
 
-    predictions = predict_stream(
-        pipeline,
-        playback_epochs(chunks, interval_seconds=args.interval),
-        max_latency_seconds=args.deadline,
+    _, chunks, _, true_labels = train_test_split(
+        chunks,
+        true_labels,
+        test_size=meta.test_size,
+        stratify=true_labels,
+        random_state=meta.random_state,
     )
-    for prediction in predictions:
+    print(f"Scoring on held-out test set ({len(true_labels)} epochs, {meta.test_size:.0%} split)")
+
+    print(f"\n{'epoch nb:':<12} {'[prediction]':>12} {'[truth]':>8} {'equal?':>7} {'latency':>12}")
+    predicted_labels = []
+    for prediction, truth in zip(
+        predict_stream(
+            pipeline,
+            playback_epochs(chunks, interval_seconds=args.interval),
+            max_latency_seconds=args.deadline,
+        ),
+        true_labels,
+    ):
+        equal = prediction.label == truth
         print(
-            f"chunk={prediction.index} label={prediction.label} "
-            f"latency={prediction.latency_seconds:.6f}s",
+            f"epoch {prediction.index:02d}:"
+            f"        [{prediction.label}]"
+            f"       [{truth}]"
+            f"  {'True' if equal else 'False':>5}"
+            f"  {prediction.latency_seconds:.6f}s",
             flush=True,
         )
+        predicted_labels.append(prediction.label)
+
+    score = accuracy_score(true_labels[:len(predicted_labels)], predicted_labels)
+    print(f"\nAccuracy: {score:.4f}")
     return 0
 
 
